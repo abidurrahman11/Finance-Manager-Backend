@@ -1,0 +1,240 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            Int       @id @default(autoincrement())
+  name          String
+  email         String    @unique
+  password_hash String    @map("password_hash")
+  is_verified   Boolean   @default(false) @map("is_verified")
+  created_at    DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  verification_tokens VerificationToken[]
+  refresh_tokens       RefreshToken[]
+  password_resets      PasswordReset[]
+  expense_groups       ExpenseGroup[]
+  expense_group_collaborators ExpenseGroupCollaborator[]
+  expenses             Expense[]
+  income_groups        IncomeGroup[]
+  income_group_collaborators IncomeGroupCollaborator[]
+  incomes              Income[]
+  recurring_bills      RecurringBill[]
+  plans                Plan[]
+  plan_collaborators   PlanCollaborator[]
+
+  @@map("users")
+}
+
+model VerificationToken {
+  id         Int      @id @default(autoincrement())
+  user_id    Int      @map("user_id")
+  token      String
+  expires_at DateTime @map("expires_at")
+  created_at DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@map("verification_tokens")
+}
+
+model RefreshToken {
+  id         Int      @id @default(autoincrement())
+  user_id    Int      @map("user_id")
+  token      String   @unique
+  created_at DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
+
+model PasswordReset {
+  id         Int      @id @default(autoincrement())
+  user_id    Int      @map("user_id")
+  token      String   @unique
+  expires_at DateTime @map("expires_at")
+  created_at DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("password_resets")
+}
+
+model ExpenseGroup {
+  id          Int       @id @default(autoincrement())
+  user_id     Int       @map("user_id")
+  title       String
+  description String?
+  start_date  DateTime? @map("start_date")
+  end_date    DateTime? @map("end_date")
+  created_at  DateTime  @default(now()) @map("created_at")
+
+  user          User                       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  collaborators ExpenseGroupCollaborator[]
+  expenses      Expense[]
+
+  @@map("expense_groups")
+}
+
+model ExpenseGroupCollaborator {
+  id              Int    @id @default(autoincrement())
+  expense_group_id Int   @map("expense_group_id")
+  user_id         Int    @map("user_id")
+  role            String  // 'viewer' or 'editor'
+
+  expense_group ExpenseGroup @relation(fields: [expense_group_id], references: [id], onDelete: Cascade)
+  user          User          @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([expense_group_id, user_id])
+  @@map("expense_group_collaborators")
+}
+
+model Expense {
+  id               Int       @id @default(autoincrement())
+  user_id          Int       @map("user_id")
+  title            String
+  amount           Decimal   @db.Decimal(10, 2)
+  category         String
+  expense_date     DateTime  @default(now()) @map("expense_date")
+  notes            String?
+  image_url        String?   @map("image_url")
+  expense_group_id Int?      @map("expense_group_id")
+  created_at       DateTime  @default(now()) @map("created_at")
+
+  user         User         @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  expense_group ExpenseGroup? @relation(fields: [expense_group_id], references: [id], onDelete: SetNull)
+
+  @@map("expenses")
+}
+
+model IncomeGroup {
+  id          Int       @id @default(autoincrement())
+  user_id     Int       @map("user_id")
+  title       String
+  description String?
+  start_date  DateTime? @map("start_date")
+  end_date    DateTime? @map("end_date")
+  created_at  DateTime  @default(now()) @map("created_at")
+
+  user          User                      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  collaborators IncomeGroupCollaborator[]
+  incomes       Income[]
+
+  @@map("income_groups")
+}
+
+model IncomeGroupCollaborator {
+  id              Int    @id @default(autoincrement())
+  income_group_id Int    @map("income_group_id")
+  user_id         Int    @map("user_id")
+  role            String  // 'viewer' or 'editor'
+
+  income_group IncomeGroup @relation(fields: [income_group_id], references: [id], onDelete: Cascade)
+  user          User        @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([income_group_id, user_id])
+  @@map("income_group_collaborators")
+}
+
+model Income {
+  id              Int       @id @default(autoincrement())
+  user_id         Int       @map("user_id")
+  title            String
+  amount           Decimal   @db.Decimal(10, 2)
+  category         String
+  income_date      DateTime  @default(now()) @map("income_date")
+  notes            String?
+  image_url        String?   @map("image_url")
+  income_group_id  Int?      @map("income_group_id")
+  created_at       DateTime  @default(now()) @map("created_at")
+
+  user         User         @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  income_group IncomeGroup? @relation(fields: [income_group_id], references: [id], onDelete: SetNull)
+
+  @@map("incomes")
+}
+
+model RecurringBill {
+  id         Int       @id @default(autoincrement())
+  user_id    Int       @map("user_id")
+  title      String
+  amount     Decimal   @db.Decimal(10, 2)
+  due_day    Int       @map("due_day") // 1-31
+  notes      String?
+  created_at DateTime  @default(now()) @map("created_at")
+
+  user     User          @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  payments BillPayment[]
+
+  @@map("recurring_bills")
+}
+
+model BillPayment {
+  id           Int       @id @default(autoincrement())
+  bill_id      Int       @map("bill_id")
+  payment_date DateTime  @map("payment_date") // Stored as YYYY-MM-01
+  status       String    @default("pending") // 'pending' or 'paid'
+  paid_amount  Decimal?  @db.Decimal(10, 2) @map("paid_amount")
+  notes        String?
+  updated_at   DateTime  @updatedAt @map("updated_at")
+
+  bill RecurringBill @relation(fields: [bill_id], references: [id], onDelete: Cascade)
+
+  @@unique([bill_id, payment_date])
+  @@map("bill_payments")
+}
+
+model Plan {
+  id            Int       @id @default(autoincrement())
+  user_id       Int       @map("user_id")
+  title         String
+  description   String?
+  target_amount Decimal?  @db.Decimal(10, 2) @map("target_amount")
+  start_date    DateTime? @map("start_date")
+  end_date      DateTime? @map("end_date")
+  created_at    DateTime  @default(now()) @map("created_at")
+
+  user          User              @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  collaborators PlanCollaborator[]
+  items         PlanItem[]
+
+  @@map("plans")
+}
+
+model PlanCollaborator {
+  id       Int    @id @default(autoincrement())
+  plan_id  Int    @map("plan_id")
+  user_id  Int    @map("user_id")
+  role     String // 'viewer' or 'editor'
+
+  plan Plan @relation(fields: [plan_id], references: [id], onDelete: Cascade)
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([plan_id, user_id])
+  @@map("plan_collaborators")
+}
+
+model PlanItem {
+  id              Int       @id @default(autoincrement())
+  plan_id         Int       @map("plan_id")
+  category        String
+  expected_amount Decimal   @db.Decimal(10, 2) @map("expected_amount")
+  spent_amount    Decimal   @default(0) @db.Decimal(10, 2) @map("spent_amount")
+  notes           String?
+  created_at      DateTime  @default(now()) @map("created_at")
+  updated_at      DateTime  @updatedAt @map("updated_at")
+
+  plan Plan @relation(fields: [plan_id], references: [id], onDelete: Cascade)
+
+  @@map("plan_items")
+}
