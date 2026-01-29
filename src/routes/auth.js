@@ -63,7 +63,7 @@ router.post("/register", async (req, res) => {
     });
 
     // Send verification email
-    const verificationLink = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
+    const verificationLink = `${process.env.CLIENT_URL}/api/auth/verify-email/${verificationToken}`;
 
     await sendEmail({
       to: email,
@@ -79,7 +79,7 @@ router.post("/register", async (req, res) => {
     res.json({ ...newUser, message: "Registration successful. Please check your email to verify your account." });
   } catch (err) {
     console.error(err.message);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Server error." + err });
   }
 });
 
@@ -122,7 +122,7 @@ router.post("/login", async (req, res) => {
     res.json({ accessToken, refreshToken });
   } catch (err) {
     console.error(err.message);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Server error." + err });
   }
 });
 
@@ -157,7 +157,7 @@ router.get("/verify-email/:token", async (req, res) => {
     res.json({ message: "Email verified successfully" });
   } catch (err) {
     console.error(err.message);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Server error." + err });
   }
 });
 
@@ -201,7 +201,7 @@ router.post("/resend-verification", async (req, res) => {
     });
 
     // Send email
-    const verificationLink = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
+    const verificationLink = `${process.env.CLIENT_URL}/api/auth/verify-email/${verificationToken}`;
 
     await sendEmail({
       to: email,
@@ -239,7 +239,7 @@ router.get("/me", auth, async (req, res) => {
     res.json(user);
   } catch (err) {
     console.error(err.message);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Server error." + err });
   }
 });
 
@@ -267,7 +267,7 @@ router.post("/refresh", async (req, res) => {
 
         res.json({accessToken: newAccessToken});
     } catch (err) {
-        res.status(403).json({message: "invalid or expired refresh token"});
+        res.status(403).json({message: "invalid or expired refresh token." + err});
     }
 });
 
@@ -285,7 +285,7 @@ router.post("/logout", async (req, res) => {
         res.json({message: "logged out successfully"});
     } catch(err) {
         console.error(err.message);
-        res.status(500).send("server error");
+        res.status(500).send("server error." + err);
     }
 });
 
@@ -324,7 +324,7 @@ router.post("/change-password", auth, async(req, res) => {
         res.json({message: "password changed successfully"});
     } catch (err) {
         console.error(err.message);
-        res.status(500).send("server error");
+        res.status(500).send("server error." + err);
     }
 });
 
@@ -363,7 +363,7 @@ router.post("/forgot-password", async(req, res) => {
         });
 
         // send email
-        const resetLink = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
+        const resetLink = `${process.env.CLIENT_URL}/api/auth/reset-password/${resetToken}`;
 
         await sendEmail({
           to: email,
@@ -380,7 +380,7 @@ router.post("/forgot-password", async(req, res) => {
         res.json({message: "If that email exists, a reset link was sent"});
     } catch (err) {
         console.error(err.message);
-        res.status(500).send("server error");
+        res.status(500).send("server error." + err);
     }
 });
 
@@ -423,7 +423,7 @@ router.post("/reset-password/:token", async(req, res) => {
         res.json({message: "password reset successful"});
     } catch(err) {
         console.error(err.message);
-        res.status(500).send("server error");
+        res.status(500).send("server error." + err);
     }
 });
 
