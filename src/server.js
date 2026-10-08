@@ -8,7 +8,7 @@ const expenseRoutes = require("./routes/expenses");
 const analyticsRoutes = require("./routes/analytics");
 const planRoutes = require("./routes/plans");
 const incomeRoutes = require("./routes/incomes");
-const billRoutes = require("./routes/bills");
+// Note: bills routes removed — the Reminders feature is fully offline on the client.
 
 const app = express();
 app.use(cors());
@@ -23,7 +23,6 @@ app.use("/api/expenses", expenseRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/plans", planRoutes);
 app.use("/api/incomes", incomeRoutes);
-app.use("/api/bills", billRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

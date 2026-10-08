@@ -221,7 +221,7 @@ router.post("/resend-verification", async (req, res) => {
   }
 });
 
-// Update /me to include is_verified
+// Get current user
 router.get("/me", auth, async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
@@ -243,7 +243,34 @@ router.get("/me", auth, async (req, res) => {
   }
 });
 
-// refresh token access
+// Update profile (name only — email is immutable)
+router.put("/me", auth, async (req, res) => {
+    try {
+        const { name } = req.body;
+
+        if (!name || typeof name !== "string" || name.trim().length < 1) {
+            return res.status(400).json({ message: "Name is required" });
+        }
+
+        const updatedUser = await prisma.user.update({
+            where: { id: req.user.id },
+            data: { name: name.trim() },
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                is_verified: true
+            }
+        });
+
+        res.json(updatedUser);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).json({ message: "Server error." + err });
+    }
+});
+
+// Refresh token
 router.post("/refresh", async (req, res) => {
     const {refreshToken} = req.body;
     if (!refreshToken) {
@@ -271,7 +298,7 @@ router.post("/refresh", async (req, res) => {
     }
 });
 
-// logout
+// Logout
 router.post("/logout", async (req, res) => {
     const {refreshToken} = req.body;
     if (!refreshToken) {
@@ -289,7 +316,7 @@ router.post("/logout", async (req, res) => {
     }
 });
 
-// change password
+// Change password
 router.post("/change-password", auth, async(req, res) => {
     try {
         const {oldPassword, newPassword} = req.body;
@@ -328,7 +355,7 @@ router.post("/change-password", auth, async(req, res) => {
     }
 });
 
-// forget password: send reset link
+// Forgot password: send reset link
 router.post("/forgot-password", async(req, res) => {
     try {
         const {email} = req.body;
@@ -340,8 +367,8 @@ router.post("/forgot-password", async(req, res) => {
         const user = await prisma.user.findUnique({
           where: { email }
         });
-        // if no user exist. avoid leaking valid email. do not let attackers to try another random email
-        if (!user) { // just decieving
+        // if no user exist, avoid leaking valid email
+        if (!user) {
             return res.status(200).json({message: "if that email exists, a reset link was sent"});
         }
 
@@ -384,7 +411,7 @@ router.post("/forgot-password", async(req, res) => {
     }
 });
 
-// reset password: verify token & update password
+// Reset password: verify token & update password
 router.post("/reset-password/:token", async(req, res) => {
     try {
         const {token} = req.params;
@@ -426,7 +453,5 @@ router.post("/reset-password/:token", async(req, res) => {
         res.status(500).send("server error." + err);
     }
 });
-
-
 
 module.exports = router;

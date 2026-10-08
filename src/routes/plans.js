@@ -102,8 +102,20 @@ router.get("/:id", auth, async (req, res) => {
             return res.status(404).json({ message: "Plan not found or not accessible" });
         }
 
+        const role = plan.user_id === userId
+            ? "owner"
+            : (await prisma.planCollaborator.findUnique({
+                where: {
+                    plan_id_user_id: {
+                        plan_id: planId,
+                        user_id: userId
+                    }
+                },
+                select: { role: true }
+            }))?.role;
+
         // Return the response
-        res.json({ plan, items: plan.items });
+        res.json({ plan: { ...plan, role }, items: plan.items });
     } catch (err) {
         console.error(err);
         res.status(500).send("Server error");
@@ -238,6 +250,15 @@ router.put("/:id/items/:itemId", auth, async (req, res) => {
             return res.status(403).json({ message: "Not allowed" });
         }
 
+        const itemCheck = await prisma.planItem.findUnique({
+            where: { id: itemId },
+            select: { plan_id: true }
+        });
+
+        if (!itemCheck || itemCheck.plan_id !== planId) {
+            return res.status(404).json({ message: "Plan item not found or does not belong to this plan" });
+        }
+
         // Update specific plan item
         const updatedItem = await prisma.planItem.update({
             where: { id: itemId },
@@ -279,6 +300,15 @@ router.delete("/:id/items/:itemId", auth, async (req, res) => {
 
         if (!plan || (plan.user_id !== req.user.id && plan.collaborators.length === 0)) {
             return res.status(403).json({ message: "Do not have permission to delete" });
+        }
+
+        const itemCheck = await prisma.planItem.findUnique({
+            where: { id: itemId },
+            select: { plan_id: true }
+        });
+
+        if (!itemCheck || itemCheck.plan_id !== planId) {
+            return res.status(404).json({ message: "Plan item not found or does not belong to this plan" });
         }
 
         // Delete specific plan item
